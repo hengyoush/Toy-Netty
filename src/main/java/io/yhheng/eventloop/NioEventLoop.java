@@ -157,7 +157,7 @@ public class NioEventLoop extends Thread implements EventLoop {
                 }
 
                 if ((readyOps & SelectionKey.OP_READ) != 0) {
-                    channel.read(voidPromise);
+                    channel.read();
                 }
             } catch (Throwable e) {
                 e.printStackTrace();

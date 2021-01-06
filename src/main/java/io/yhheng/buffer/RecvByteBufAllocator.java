@@ -1,4 +1,4 @@
-package com.iflytek.edu.alloc;
+package io.yhheng.buffer;
 
 import io.netty.buffer.ByteBuf;
 

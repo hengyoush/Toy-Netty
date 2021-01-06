@@ -5,6 +5,8 @@ import io.yhheng.concurrent.Promise;
 import io.yhheng.eventloop.EventLoop;
 
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SocketChannel;
 
 /**
  * @version V1.0
@@ -32,6 +34,8 @@ public interface Channel extends ChannelOutboundInvoker {
 
     EventLoop eventloop();
     ChannelPipeline pipeline();
+    SelectableChannel javaChannel();
+    Promise<Void> voidPromise();
 
     boolean isRegistered();
     boolean isOpen();

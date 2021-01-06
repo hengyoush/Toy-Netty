@@ -1,9 +1,9 @@
 package io.yhheng.channel;
 
-import io.netty.util.internal.ThrowableUtil;
 import io.yhheng.common.ConnectTimeoutException;
 import io.yhheng.common.ConnectionPendingException;
 import io.yhheng.common.ExtendedClosedChannelException;
+import io.yhheng.common.ThrowableUtil;
 import io.yhheng.concurrent.DefaultPromise;
 import io.yhheng.concurrent.Future;
 import io.yhheng.concurrent.Promise;
@@ -11,18 +11,18 @@ import io.yhheng.eventloop.EventLoop;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractNioSocketChannel implements Channel {
-    private SocketChannel ch;
+    private SelectableChannel ch;
     private EventLoop eventLoop;
     private ChannelPipeline pipeline;
     private ChannelConfig config;
     private ChannelOutboundBuffer channelOutboundBuffer;
 
-    private SelectionKey selectionKey;
+    protected SelectionKey selectionKey;
 
     private Promise<Void> connectPromise = new DefaultPromise<>();
     private Future<?> connectTimeoutFuture;
@@ -101,6 +101,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
     }
 
     abstract void doFinishConnect();
+
     @Override
     public void bind(SocketAddress socketAddress, Promise<Void> promise) {
         if (!isOpen()) {
@@ -124,7 +125,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
         }
     }
 
-    abstract boolean doBind(SocketAddress localAddress);
+    abstract void doBind(SocketAddress localAddress) throws Exception;
 
     private void invokeLater(Runnable command) {
         try {
@@ -163,7 +164,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
             }
             boolean firstRegistered = this.firstRegistered;
 
-            register0();
+            doRegister();
 
             this.firstRegistered = false;
             this.registered = true;
@@ -182,7 +183,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
         }
     }
 
-    abstract void register0();
+    abstract void doRegister() throws Exception;
 
     abstract void beginRead();
 
@@ -216,8 +217,8 @@ public abstract class AbstractNioSocketChannel implements Channel {
             } else {
                 this.channelOutboundBuffer = null;
                 try {
-                    ch.shutdownOutput();
-                } catch (IOException ex) {
+                    doShutdownOutput();
+                } catch (Exception ex) {
                     close(voidPromise);
                 }
             }
@@ -225,6 +226,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
     }
 
     abstract void doWrite(ChannelOutboundBuffer channelOutboundBuffer) throws Exception;
+    abstract void doShutdownOutput() throws Exception;
 
     @Override
     public void close(Promise<Void> promise) {
@@ -259,6 +261,16 @@ public abstract class AbstractNioSocketChannel implements Channel {
     @Override
     public ChannelPipeline pipeline() {
         return pipeline;
+    }
+
+    @Override
+    public SelectableChannel javaChannel() {
+        return ch;
+    }
+
+    @Override
+    public Promise<Void> voidPromise() {
+        return voidPromise;
     }
 
     @Override

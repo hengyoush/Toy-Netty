@@ -7,5 +7,6 @@ public interface ChannelPipeline extends ChannelInboundInvoker, ChannelOutboundI
     ChannelPipeline fireChannelUnRegister();
     ChannelPipeline fireChannelActive();
     ChannelPipeline fireChannelInActive();
-    ChannelPipeline fireChannelRead();
+    ChannelPipeline fireChannelRead(Object msg);
+    ChannelPipeline fireExceptionCaught(Throwable cause);
 }
