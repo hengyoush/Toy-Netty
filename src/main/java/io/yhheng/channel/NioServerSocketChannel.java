@@ -49,7 +49,7 @@ public class NioServerSocketChannel extends NioMessageSocketChannel {
 
     @Override
     void doWrite(ChannelOutboundBuffer channelOutboundBuffer) throws Exception {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
