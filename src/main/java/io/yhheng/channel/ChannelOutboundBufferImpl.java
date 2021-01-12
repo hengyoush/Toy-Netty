@@ -17,6 +17,8 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
 
     private int flushed;
 
+    private int nioBufferCount;
+
     @Override
     public void addMessage(Object msg, int size, Promise<Void> promise) {
         Entry entry = new Entry();
@@ -95,8 +97,23 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
     }
 
     @Override
-    public void removeBytes(int removeBytes) {
+    public void removeBytes(long removeBytes) {
+        for (; ; ) {
+            Object current = current();
+            if (!(current instanceof ByteBuf)) {
+                break;
+            }
 
+            ByteBuf byteBuf = (ByteBuf) current;
+            int readableBytes = byteBuf.readableBytes();
+            if (readableBytes < removeBytes) {
+                remove();
+                removeBytes -= readableBytes;
+            } else {
+                byteBuf.readerIndex(byteBuf.readerIndex() + (int) removeBytes);
+                break;
+            }
+        }
     }
 
     @Override
@@ -143,7 +160,13 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
 
             entry = entry.next;
         }
+        this.nioBufferCount = nioBuffersCount;
         return result.toArray(new ByteBuffer[]{});
+    }
+
+    @Override
+    public int nioBufferCount() {
+        return nioBufferCount;
     }
 
     private static class Entry {

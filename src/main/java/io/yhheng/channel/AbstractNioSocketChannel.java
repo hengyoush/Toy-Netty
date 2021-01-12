@@ -67,7 +67,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
         }
     }
 
-    abstract boolean doConnect(SocketAddress remoteAddress);
+    abstract boolean doConnect(SocketAddress remoteAddress) throws Exception;
 
     private void fulfillConnectPromise(Promise<Void> promise, boolean wasActive) {
         boolean promiseSet = promise.trySuccess(null);
@@ -100,7 +100,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
         }
     }
 
-    abstract void doFinishConnect();
+    abstract void doFinishConnect() throws Exception;
 
     @Override
     public void bind(SocketAddress socketAddress, Promise<Void> promise) {

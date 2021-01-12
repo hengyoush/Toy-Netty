@@ -10,7 +10,7 @@ public interface ChannelOutboundBuffer {
     Object current();
     boolean remove();
     boolean remove(Throwable cause);
-    void removeBytes(int removeBytes);
+    void removeBytes(long removeBytes);
 
     int size();
     boolean isEmpty();
@@ -22,4 +22,5 @@ public interface ChannelOutboundBuffer {
      * @return
      */
     ByteBuffer[] nioBuffers(int maxCount, long maxBytes);
+    int nioBufferCount();
 }
