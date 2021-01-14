@@ -10,6 +10,7 @@ public interface ChannelOutboundBuffer {
     Object current();
     boolean remove();
     boolean remove(Throwable cause);
+    void close(Throwable cause);
     void removeBytes(long removeBytes);
 
     int size();

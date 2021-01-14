@@ -1,8 +1,11 @@
 package io.yhheng.channel;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.yhheng.buffer.RecvByteBufAllocator;
+import io.yhheng.eventloop.EventLoop;
 
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -12,6 +15,16 @@ import java.nio.channels.SocketChannel;
  */
 public abstract class NioByteSocketChannel extends AbstractNioSocketChannel {
     private RecvByteBufAllocator allocator;
+    private ByteBufAllocator byteBufAllocator;
+
+    NioByteSocketChannel(SelectableChannel ch,
+                         EventLoop eventLoop,
+                         ChannelPipeline channelPipeline,
+                         ChannelConfig config) {
+        super(ch, eventLoop, channelPipeline, config);
+        this.allocator = config.getRecvByteBufAllocator();
+        this.byteBufAllocator = config.getByteBufAllocator();
+    }
 
     @Override
     public void read() {
@@ -19,7 +32,7 @@ public abstract class NioByteSocketChannel extends AbstractNioSocketChannel {
         boolean close = false;
         try {
             do {
-                ByteBuf buf = allocator.allocate();
+                ByteBuf buf = allocator.allocate(byteBufAllocator);
                 int attemptReadBytes = buf.writableBytes();
                 int readBytes = buf.writeBytes(javaChannel(), attemptReadBytes);
                 allocator.recordBytesRead(attemptReadBytes, readBytes);

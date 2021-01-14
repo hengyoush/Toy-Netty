@@ -1,6 +1,7 @@
 package io.yhheng.channel;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import io.yhheng.concurrent.Promise;
 
 import java.nio.ByteBuffer;
@@ -70,6 +71,7 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
         flushedEntry = flushedEntry.next;
 
         promise.setSuccess(null);
+        ReferenceCountUtil.safeRelease(entry.msg);
         entry.recycle();
 
         return true;
@@ -91,9 +93,19 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
         flushedEntry = flushedEntry.next;
 
         promise.setFail(cause);
+        ReferenceCountUtil.safeRelease(entry.msg);
         entry.recycle();
 
         return true;
+    }
+
+    @Override
+    public void close(Throwable cause) {
+        for (; ; ) {
+            if (!remove(cause)) {
+                break;
+            }
+        }
     }
 
     @Override
@@ -174,6 +186,7 @@ public class ChannelOutboundBufferImpl implements ChannelOutboundBuffer {
         Entry next;
         Promise<Void> promise;
 
+        // TODO
         public void recycle() {
 
         }

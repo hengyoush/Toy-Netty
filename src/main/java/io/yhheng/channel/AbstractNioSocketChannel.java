@@ -11,15 +11,16 @@ import io.yhheng.eventloop.EventLoop;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractNioSocketChannel implements Channel {
-    private SelectableChannel ch;
-    private EventLoop eventLoop;
-    private ChannelPipeline pipeline;
-    private ChannelConfig config;
+    private final SelectableChannel ch;
+    private final EventLoop eventLoop;
+    private final ChannelPipeline pipeline;
+    private final ChannelConfig config;
     private ChannelOutboundBuffer channelOutboundBuffer;
 
     protected SelectionKey selectionKey;
@@ -31,6 +32,21 @@ public abstract class AbstractNioSocketChannel implements Channel {
     private boolean closeInited = false;
     private boolean registered = false;
     private boolean firstRegistered = true;
+
+    private Throwable CLOSE_CHANNEL_EXCEPTION =
+            ThrowableUtil.unknownStackTrace(new ClosedChannelException(),
+                    AbstractNioSocketChannel.class, "close(...)");
+
+    AbstractNioSocketChannel(SelectableChannel ch,
+                             EventLoop eventLoop,
+                             ChannelPipeline channelPipeline,
+                             ChannelConfig config) {
+        this.ch = ch;
+        this.eventLoop = eventLoop;
+        this.pipeline = channelPipeline;
+        this.config = config;
+        this.channelOutboundBuffer = new ChannelOutboundBufferImpl();
+    }
 
     @Override
     public void connect(SocketAddress remoteAddress, Promise<Void> promise) {
@@ -114,7 +130,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
             boolean wasActive = isActive();
             doBind(socketAddress);
             if (!wasActive && isActive()) {
-                invokeLater(() -> pipeline.fireChannelActive());
+                invokeLater(pipeline::fireChannelActive);
             }
             promise.trySuccess(null);
         } catch (Throwable t) {
@@ -208,7 +224,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
         flush0();
     }
 
-    private void flush0() {
+    protected void flush0() {
         try {
             doWrite(this.channelOutboundBuffer);
         } catch (Exception e) {
@@ -243,6 +259,11 @@ public abstract class AbstractNioSocketChannel implements Channel {
         // 开始关闭
         closeInited = true;
 
+        doClose(promise);
+        unregister(promise);
+    }
+
+    protected void doClose(Promise<Void> promise) {
         try {
             ch.close();
             closePromise.setSuccess(null);
@@ -250,6 +271,8 @@ public abstract class AbstractNioSocketChannel implements Channel {
         } catch (IOException e) {
             closePromise.setFail(e);
             promise.tryFail(e);
+        } finally {
+            this.channelOutboundBuffer.close(CLOSE_CHANNEL_EXCEPTION);
         }
     }
 
@@ -266,6 +289,11 @@ public abstract class AbstractNioSocketChannel implements Channel {
     @Override
     public SelectableChannel javaChannel() {
         return ch;
+    }
+
+    @Override
+    public ChannelConfig config() {
+        return config;
     }
 
     @Override

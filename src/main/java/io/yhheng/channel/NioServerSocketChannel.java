@@ -1,17 +1,27 @@
 package io.yhheng.channel;
 
+import io.yhheng.eventloop.EventLoop;
+
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
 /**
- * @version V1.0
  * @author yhheng
+ * @version V1.0
  * @date 2021/1/6
  */
 public class NioServerSocketChannel extends NioMessageSocketChannel {
+    public NioServerSocketChannel(SelectableChannel ch,
+                                  EventLoop eventLoop,
+                                  ChannelPipeline channelPipeline,
+                                  ChannelConfig config) {
+        super(ch, eventLoop, channelPipeline, config);
+    }
+
     @Override
     boolean doConnect(SocketAddress remoteAddress) {
         return false;
@@ -71,7 +81,10 @@ public class NioServerSocketChannel extends NioMessageSocketChannel {
     int doRead(List<Object> bufs) throws Exception {
         SocketChannel socketChannel = javaChannel().accept();
         if (socketChannel != null) {
-            bufs.add(new NioSocketChannel(socketChannel));
+            bufs.add(new NioSocketChannel(socketChannel,
+                    eventloop(),
+                    new DefaultChannelPipeline(),
+                    config()));
             return 1;
         } else {
             return 0;

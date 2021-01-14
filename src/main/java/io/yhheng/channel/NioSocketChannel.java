@@ -1,11 +1,13 @@
 package io.yhheng.channel;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.yhheng.buffer.RecvByteBufAllocator;
+import io.yhheng.eventloop.EventLoop;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 /**
  * @version V1.0
@@ -13,8 +15,11 @@ import java.nio.channels.SocketChannel;
  * @date 2021/1/6
  */
 public class NioSocketChannel extends NioByteSocketChannel {
-    public NioSocketChannel(SocketChannel javaChannel) {
-
+    public NioSocketChannel(SelectableChannel ch,
+                            EventLoop eventLoop,
+                            ChannelPipeline channelPipeline,
+                            ChannelConfig config) {
+        super(ch, eventLoop, channelPipeline, config);
     }
 
     @Override
@@ -40,7 +45,14 @@ public class NioSocketChannel extends NioByteSocketChannel {
 
     @Override
     void beginRead() {
+        if (!selectionKey.isValid()) {
+            return;
+        }
 
+        int interestOps = selectionKey.interestOps();
+        if ((interestOps & SelectionKey.OP_READ) == 0) {
+            selectionKey.interestOps(interestOps | SelectionKey.OP_READ);
+        }
     }
 
     @Override
@@ -50,9 +62,9 @@ public class NioSocketChannel extends NioByteSocketChannel {
             return;
         }
 
-        ByteBuffer[] byteBuffers = in.nioBuffers(1024, 1024); // TODO
+        ByteBuffer[] byteBuffers = in.nioBuffers(1024, config().getMaxBytesPerGatheringWrite());
         int nioBufferCount = in.nioBufferCount();
-        int writeSpinCount = 16; // TODO
+        int writeSpinCount = config().writeSpinCount();
         do {
             switch (nioBufferCount) {
                 case 0: {
@@ -63,7 +75,7 @@ public class NioSocketChannel extends NioByteSocketChannel {
                     int attemptWriteBytes = byteBuffer.remaining();
                     int realWriteBytes = javaChannel().write(byteBuffer);
                     if (realWriteBytes <= 0) {
-                        // incompleteWrite TODO
+                        incompleteWrite(true);
                     }
                     in.removeBytes(realWriteBytes);
                     writeSpinCount--;
@@ -73,7 +85,7 @@ public class NioSocketChannel extends NioByteSocketChannel {
                     // gatheringWrite
                     long realWriteBytes = javaChannel().write(byteBuffers, 0, nioBufferCount);
                     if (realWriteBytes <= 0) {
-                        // incompleteWrite TODO
+                        incompleteWrite(true);
                     }
                     in.removeBytes(realWriteBytes);
                     writeSpinCount--;
@@ -90,6 +102,25 @@ public class NioSocketChannel extends NioByteSocketChannel {
 
         if ((selectionKey.interestOps() & SelectionKey.OP_WRITE) != 0) {
             selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
+        }
+    }
+
+    private void setOpWrite() {
+        if (!selectionKey.isValid()) {
+            return;
+        }
+
+        if ((selectionKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+            selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
+        }
+    }
+
+    private void incompleteWrite(boolean setOpWrite) {
+        if (setOpWrite) {
+            setOpWrite();
+        } else {
+            clearOpWrite();
+            eventloop().submit(this::flush0);
         }
     }
 

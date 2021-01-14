@@ -35,6 +35,7 @@ public interface Channel extends ChannelOutboundInvoker {
     EventLoop eventloop();
     ChannelPipeline pipeline();
     SelectableChannel javaChannel();
+    ChannelConfig config();
     Promise<Void> voidPromise();
 
     boolean isRegistered();

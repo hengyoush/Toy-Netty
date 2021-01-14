@@ -1,8 +1,10 @@
 package io.yhheng.channel;
 
 import io.yhheng.buffer.RecvByteBufAllocator;
+import io.yhheng.eventloop.EventLoop;
 
 import java.io.IOException;
+import java.nio.channels.SelectableChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +16,14 @@ import java.util.List;
 public abstract class NioMessageSocketChannel extends AbstractNioSocketChannel {
     private List<Object> readBuf = new ArrayList<>();
     private RecvByteBufAllocator allocator;
+
+    NioMessageSocketChannel(SelectableChannel ch,
+                            EventLoop eventLoop,
+                            ChannelPipeline channelPipeline,
+                            ChannelConfig config) {
+        super(ch, eventLoop, channelPipeline, config);
+        this.allocator = config.getRecvByteBufAllocator();
+    }
 
     @Override
     public void read() {
