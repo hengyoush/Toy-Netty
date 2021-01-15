@@ -5,5 +5,5 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelUnRegister();
     ChannelInboundInvoker fireChannelActive();
     ChannelInboundInvoker fireChannelInActive();
-    ChannelInboundInvoker fireChannelRead();
+    ChannelInboundInvoker fireChannelRead(Object msg);
 }

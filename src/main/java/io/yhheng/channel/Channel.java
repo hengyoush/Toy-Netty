@@ -27,6 +27,7 @@ public interface Channel extends ChannelOutboundInvoker {
     void register(EventLoop eventLoop, Promise<Void> promise);
 
     void read();
+    void beginRead();
     void write(Object msg, Promise<Void> promise);
     void flush(Promise<Void> promise);
 
