@@ -201,7 +201,7 @@ public abstract class AbstractNioSocketChannel implements Channel {
 
     abstract void doRegister() throws Exception;
 
-    abstract void beginRead();
+    public abstract void beginRead();
 
     @Override
     public abstract void read();

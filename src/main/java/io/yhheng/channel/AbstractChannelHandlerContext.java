@@ -7,7 +7,7 @@ import java.net.SocketAddress;
 
 public abstract class AbstractChannelHandlerContext implements ChannelHandlerContext {
     private static final int OUTBOUND_MASK = 1 << 1;
-    private static final int INBOUND_MASK = 1 << 1;
+    private static final int INBOUND_MASK = 1 << 2;
 
     private final Channel channel;
     private final ChannelPipeline channelPipeline;
@@ -20,6 +20,10 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
     public AbstractChannelHandlerContext(ChannelPipeline channelPipeline) {
         this.channel = channelPipeline.channel();
         this.channelPipeline = channelPipeline;
+
+    }
+
+    public void init() {
         if (handler() != null) {
             ChannelHandler handler = handler();
             if (handler instanceof ChannelInboundHandler) {
@@ -77,6 +81,13 @@ public abstract class AbstractChannelHandlerContext implements ChannelHandlerCon
     public ChannelInboundInvoker fireChannelRead(Object msg) {
         AbstractChannelHandlerContext context = findContextInbound();
         ((ChannelInboundHandler) context.handler()).channelRead(context, msg);
+        return this;
+    }
+
+    @Override
+    public ChannelInboundInvoker fireExceptionCaught(Throwable cause) {
+        AbstractChannelHandlerContext context = findContextInbound();
+        ((ChannelInboundHandler) context.handler()).exceptionCaught(context, cause);
         return this;
     }
 

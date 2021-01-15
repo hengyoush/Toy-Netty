@@ -6,4 +6,5 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelActive();
     ChannelInboundInvoker fireChannelInActive();
     ChannelInboundInvoker fireChannelRead(Object msg);
+    ChannelInboundInvoker fireExceptionCaught(Throwable cause);
 }

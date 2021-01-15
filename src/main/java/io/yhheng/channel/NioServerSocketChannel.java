@@ -83,7 +83,7 @@ public class NioServerSocketChannel extends NioMessageSocketChannel {
         if (socketChannel != null) {
             bufs.add(new NioSocketChannel(socketChannel,
                     eventloop(),
-                    new DefaultChannelPipeline(),
+                    new DefaultChannelPipeline(head, tail),
                     config()));
             return 1;
         } else {
